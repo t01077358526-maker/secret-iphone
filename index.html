@@ -909,8 +909,6 @@
     async function importPhoneContacts() {
       const supported = ("contacts" in navigator) && ("ContactsManager" in window);
       if (!supported) {
-        // En iPhone, computadoras y navegadores no compatibles no hay acceso a la agenda:
-        // usamos compartir/copiar el link de invitación como alternativa.
         shareInviteLink();
         return;
       }
@@ -924,8 +922,6 @@
         }
         renderImportedContacts(contacts);
       } catch (err) {
-        // Permiso denegado, cancelado, o no disponible en este navegador:
-        // ofrecemos compartir el link en vez de dejar al usuario sin opción.
         shareInviteLink();
       }
     }
@@ -1143,7 +1139,6 @@
 
           if (data.img) {
             if (isGlobal) {
-              // Canal de noticias: la foto es permanente, se muestra directo, sin autodestrucción.
               const decryptedImg = await decryptData(data.img, activeRoomPin);
               window.photoPayloadMap.set(data.docId, decryptedImg);
               html += `<img src="${decryptedImg}" class="news-photo" onclick="expandPhoto('${data.docId}')">`;
@@ -1174,7 +1169,6 @@
           html += `
             <div class="msg-footer">
               <span class="msg-meta">${new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-              ${(!isGlobal && !(data.img && !isGlobal === false)) ? '' : ''}
               ${(!isGlobal) ? `<span class="self-destruct" id="timer_${data.docId}">⚡ 10s</span>` : ''}
             </div>
           `;
@@ -1236,7 +1230,6 @@
       }).catch(() => {});
     };
 
-    // Foto persistente (canal de noticias): se amplía y NO se borra.
     window.expandPhoto = (docId) => {
       const img = window.photoPayloadMap.get(docId);
       if (!img) return;
@@ -1244,7 +1237,6 @@
       lightboxModal.style.display = "flex";
     };
 
-    // Foto efímera (salas privadas): se ve una vez y se autodestruye.
     window.viewEphemeralPhoto = async (docId) => {
       const encryptedImg = window.photoPayloadMap.get(docId);
       if (!encryptedImg) return;
@@ -1441,6 +1433,24 @@
         micBtn.innerText = "🎤";
       }
     };
+  </script>
+
+  <!-- BLOQUE DE PROTECCIÓN ANTI-INSPECCIÓN Y CLIC DERECHO -->
+  <script>
+    // Bloquear clic derecho
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Bloquear atajos de teclado de desarrollo (F12, Ctrl+U, Ctrl+Shift+I, etc.)
+    document.addEventListener('keydown', event => {
+      if (
+        event.key === 'F12' || 
+        (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'C')) || 
+        (event.ctrlKey && event.key === 'U')
+      ) {
+        event.preventDefault();
+        return false;
+      }
+    });
   </script>
 </body>
 </html>
