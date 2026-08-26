@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#030712">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>SECRET</title>
+
+  <!-- FIREBASE SDKs COMPAT -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Share Tech Mono', monospace; -webkit-tap-highlight-color: transparent; }
+    html, body { background: #030712; height: 100vh; width: 100vw; overflow: hidden; color: #00ff66; display: flex; justify-content: center; }
+
+    .app-screen {
+      width: 100%;
+      max-width: 480px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #030712;
+      border-left: 1px solid #00ff6633;
+      border-right: 1px solid #00ff6633;
+      box-shadow: 0 0 40px rgba(0,255,102,0.05);
+    }
+
+    @keyframes neonGlow {
+      0%, 100% { color: #00ff66; text-shadow: 0 0 8px #00ff66, 0 0 20px rgba(0, 255, 102, 0.6); opacity: 1; }
+      50% { color: #00e5ff; text-shadow: 0 0 12px #00e5ff, 0 0 25px rgba(0, 229, 255, 0.7); opacity: 0.85; }
+      70% { opacity: 0.4; }
+      72% { opacity: 1; }
+    }
+
+    .secret-animated-text {
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      display: inline-block;
+      animation: neonGlow 3s infinite alternate ease-in-out;
+    }
+
+    button, .contact-card, .reaction-pill { transition: all 0.15s ease; }
+
+    #auth-view {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      gap: 14px;
+      text-align: center;
+      background: #030712;
+    }
+
+    .auth-logo {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #00ff66;
+      text-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+    }
+
+    .auth-tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+    .auth-tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: #020408;
+      border: 1px solid #00ff6633;
+      color: #00ff6677;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .auth-tab-btn.active {
+      border-color: #00ff66;
+      color: #00ff66;
+      background: #00ff6611;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(0,255,102,0.15);
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #00ff6655;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #020408;
+      color: #00ff66;
+      outline: none;
+      text-align: center;
+    }
+    .auth-input:focus { border-color: #00ff66; box-shadow: 0 0 10px rgba(0,255,102,0.2); }
+
+    .auth-btn-main {
+      background: transparent;
+      color: #00ff66;
+      border: 1px solid #00ff66;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+    }
+    .auth-btn-main:active { background: #00ff6622; transform: scale(0.98); }
+
+    #contacts-view { display: none; flex-direction: column; height: 100%; background: #030712; }
+    .contacts-header {
+      background: #030712;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #00ff6633;
+      box-shadow: 0 2px 12px rgba(0,255,102,0.04);
+    }
+    .header-info-box { display: flex; flex-direction: column; gap: 2px; }
+    .header-info-box p { font-size: 11px; color: #00ff66aa; letter-spacing: 1px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .invite-btn {
+      background: transparent;
+      border: 1px solid #00e5ff;
+      color: #00e5ff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .invite-btn:active { background: #00e5ff22; transform: scale(0.97); }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid #ff3366;
+      color: #ff3366;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+    .logout-btn:active { background: #ff336622; transform: scale(0.97); }
+
+    .create-room-box {
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      background: #020408;
+      border-bottom: 1px solid #00ff6633;
+      align-items: center;
+    }
+    .room-input {
+      flex: 1;
+      padding: 10px;
+      background: #030712;
+      border: 1px solid #00ff6655;
+      border-radius: 6px;
+      color: #00ff66;
+      font-size: 16px;
+      text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+    }
+    .room-input:focus { border-color: #00ff66; box-shadow: 0 0 10px rgba(0,255,102,0.2); }
+    .room-btn {
+      background: #00ff6611;
+      color: #00ff66;
+      border: 1px solid #00ff66;
+      padding: 0 14px;
+      height: 42px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .room-btn:active { background: #00ff6633; transform: scale(0.97); }
+
+    .contacts-list { flex: 1; overflow-y: auto; background: #030712; }
+    .section-title {
+      font-size: 11px;
+      color: #00e5ff;
+      font-weight: bold;
+      padding: 14px 16px 6px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .contact-card {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      gap: 14px;
+      border-bottom: 1px solid #00ff6611;
+      cursor: pointer;
+      user-select: none;
+      background: #030712;
+    }
+    .contact-card:active { background: #00ff6611; }
+    .contact-avatar {
+      width: 42px; height: 42px;
+      border: 1px solid #00ff6655;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; color: #00ff66;
+      background: radial-gradient(circle at 30% 30%, #00ff6633, #020408);
+      flex-shrink: 0;
+    }
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-size: 14px; font-weight: bold; color: #00ff66; }
+    .encriptado-glow { animation: neonGlow 3s infinite alternate ease-in-out; }
+    .contact-subtext { font-size: 11px; color: #00ff6677; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .mini-btn {
+      background: #00e5ff11;
+      color: #00e5ff;
+      border: 1px solid #00e5ff;
+      padding: 0 10px;
+      height: 30px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .mini-btn:active { background: #00e5ff33; transform: scale(0.96); }
+
+    .empty-hint { font-size: 11px; color: #00ff6666; padding: 10px 16px 16px; line-height: 1.5; }
+
+    .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99; justify-content: center; align-items: center; }
+    .modal-box { background: #030712; padding: 24px; border-radius: 10px; width: 85%; max-width: 320px; text-align: center; display: flex; flex-direction: column; gap: 14px; border: 1px solid #00ff66; box-shadow: 0 0 20px rgba(0,255,102,0.25); }
+    .modal-box h3 { font-size: 16px; color: #00e5ff; }
+    .modal-box p { font-size: 12px; color: #00ff66aa; }
+    .modal-input { padding: 12px; background: #020408; border: 1px solid #00ff6655; border-radius: 6px; color: #00ff66; font-size: 20px; text-align: center; letter-spacing: 5px; outline: none; -webkit-text-security: disc; }
+    .modal-input:focus { border-color: #00ff66; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-btn { flex: 1; padding: 10px; border: 1px solid #00ff66; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; background: transparent; color: #00ff66; }
+    .modal-btn:active { transform: scale(0.97); }
+    .modal-btn-danger { border-color: #ff3366; color: #ff3366; background: #ff336622; }
+    .modal-btn-ok { background: #00ff6622; }
+
+    #ephemeral-photo-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #020408;
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .photo-destruct-header {
+      position: absolute;
+      top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #030712;
+      padding: 8px 16px;
+      border: 1px solid #ff3366;
+      border-radius: 6px;
+    }
+    .photo-destruct-timer { font-size: 16px; font-weight: bold; color: #ff3366; animation: blink 0.8s infinite; }
+    .ephemeral-img { max-width: 95%; max-height: 75vh; border: 1px solid #00ff6655; border-radius: 8px; object-fit: contain; }
+
+    #lightbox-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(2,4,8,0.94);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .news-photo {
+      width: 100%;
+      max-width: 260px;
+      border-radius: 8px;
+      border: 1px solid #00ff6655;
+      margin-top: 4px;
+      cursor: pointer;
+      display: block;
+      box-shadow: 0 2px 10px rgba(0,255,102,0.1);
+    }
+
+    .photo-caption {
+      font-size: 12.5px;
+      color: #b9ffd6;
+      margin-top: 8px;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+    .photo-caption a { color: #00e5ff; text-decoration: underline; }
+
+    .photo-vault-btn {
+      background: #020408;
+      border: 1px dashed #00e5ff;
+      color: #00e5ff;
+      padding: 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+    .photo-vault-btn:active { background: #00e5ff11; }
+
+    .audio-vault-btn {
+      background: #020408;
+      border: 1px dashed #ff0055;
+      color: #ff0055;
+      padding: 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+    .audio-vault-btn:active { background: #ff005511; }
+
+    #chat-view { display: none; flex-direction: column; height: 100%; background: #030712; }
+    .chat-header {
+      background: #030712;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #00ff6633;
+    }
+    .back-btn { background: transparent; border: none; color: #00e5ff; font-size: 20px; cursor: pointer; }
+
+    #chat-box {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #030712;
+    }
+
+    .msg {
+      max-width: 85%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      word-wrap: break-word;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #00ff6633;
+      background: #050b14;
+      user-select: none;
+      box-shadow: 0 1px 6px rgba(0,255,102,0.05);
+    }
+    .msg.user { border-color: #00e5ff; align-self: flex-end; background: #021019; }
+    .msg.other { border-color: #00ff66; align-self: flex-start; }
+    .msg-sender { font-size: 10px; font-weight: bold; color: #00e5ff; margin-bottom: 2px; }
+
+    .msg-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      gap: 8px;
+    }
+    .msg-meta { font-size: 9px; color: #00ff6655; }
+    .self-destruct { font-size: 9px; color: #ff3366; font-weight: bold; animation: blink 1s infinite; }
+
+    .reactions-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(0, 255, 102, 0.1);
+      flex-wrap: wrap;
+    }
+    .reaction-pill {
+      background: #020408;
+      border: 1px solid #00ff6644;
+      border-radius: 12px;
+      padding: 2px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      color: #00ff66;
+    }
+    .reaction-pill:active { background: #00ff6622; transform: scale(0.95); }
+
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    #input-area {
+      display: flex;
+      padding: 10px 12px;
+      background: #030712;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px solid #00ff6633;
+    }
+    #msg-text {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #00ff6644;
+      border-radius: 6px;
+      background: #020408;
+      color: #00ff66;
+      outline: none;
+      font-size: 14px;
+    }
+    #msg-text:focus { border-color: #00ff66; }
+    .tool-btn, .send-circle-btn {
+      background: #00ff6611;
+      color: #00ff66;
+      border: 1px solid #00ff66;
+      width: 38px; height: 38px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .tool-btn:active, .send-circle-btn:active { transform: scale(0.93); background: #00ff6633; }
+    .tool-btn.recording {
+      background: #ff005522;
+      border-color: #ff0055;
+      color: #ff0055;
+      animation: blink 0.6s infinite;
+    }
+    .send-circle-btn { font-weight: bold; background: #00ff6622; }
+    .readonly-banner {
+      width: 100%;
+      text-align: center;
+      color: #7f91a4;
+      font-size: 12px;
+      padding: 6px 0;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-screen">
+    <div id="auth-view">
+      <div class="auth-logo secret-animated-text" id="auth-title">[SECRET]</div>
+
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab-btn active">INICIAR SESIÓN</button>
+        <button id="tab-register" class="auth-tab-btn">REGISTRARSE</button>
+      </div>
+
+      <input type="text" id="auth-user" class="auth-input" placeholder="USUARIO / ALIAS" autocomplete="off">
+      <input type="password" id="auth-pass" class="auth-input" placeholder="CONTRASEÑA (MÍN. 6 DÍGITOS)" autocomplete="off">
+
+      <button id="auth-action-btn" class="auth-btn-main">ENTRAR</button>
+    </div>
+
+    <div id="contacts-view">
+      <header class="contacts-header">
+        <div class="header-info-box">
+          <h2 class="secret-animated-text" id="header-title">[SECRET]</h2>
+          <p id="user-display">Agente: Conectando...</p>
+        </div>
+        <div class="header-actions">
+          <button class="invite-btn" id="invite-contacts-btn">📇 Invitar</button>
+          <button class="logout-btn" id="logout-btn">SALIR</button>
+        </div>
+      </header>
+
+      <div class="create-room-box">
+        <input type="password" id="custom-room-pin" class="room-input" placeholder="••••••" maxlength="6" inputmode="numeric">
+        <button id="create-room-btn" class="room-btn">+ ENCRIPTADO</button>
+      </div>
+
+      <div class="contacts-list">
+        <div class="section-title">> CANALES DISPONIBLES</div>
+        <div id="contacts-container"></div>
+
+        <div id="imported-contacts-container"></div>
+      </div>
+    </div>
+
+    <div id="pin-modal" class="custom-modal">
+      <div class="modal-box">
+        <h3>ACCESO RESTRINGIDO</h3>
+        <p id="modal-room-title">INGRESA EL PIN DE 6 DÍGITOS:</p>
+        <input type="password" id="modal-pin-input" class="modal-input" maxlength="6" placeholder="••••••" inputmode="numeric">
+        <div class="modal-actions">
+          <button class="modal-btn" id="pin-cancel">DESCARTAR</button>
+          <button class="modal-btn modal-btn-ok" id="pin-ok">DESBLOQUEAR</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="delete-modal" class="custom-modal">
+      <div class="modal-box">
+        <h3>ALERTA DE SEGURIDAD</h3>
+        <p>¿SEGURO QUIERES BORRAR TU SALA?</p>
+        <div class="modal-actions">
+          <button class="modal-btn" id="del-cancel">NO</button>
+          <button class="modal-btn modal-btn-danger" id="del-ok">SÍ</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="delete-msg-modal" class="custom-modal">
+      <div class="modal-box">
+        <h3>ALERTA DE SEGURIDAD</h3>
+        <p>¿SEGURO QUIERES BORRAR EL MENSAJE?</p>
+        <div class="modal-actions">
+          <button class="modal-btn" id="del-msg-cancel">NO</button>
+          <button class="modal-btn modal-btn-danger" id="del-msg-ok">SÍ</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="alert-modal" class="custom-modal">
+      <div class="modal-box">
+        <h3>SISTEMA</h3>
+        <p id="alert-text">MENSAJE</p>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-ok" id="alert-ok">ACEPTAR</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="caption-modal" class="custom-modal">
+      <div class="modal-box">
+        <h3>AGREGAR MENSAJE</h3>
+        <p>Escribe un mensaje o un link para acompañar la foto (opcional):</p>
+        <input type="text" id="caption-input" class="modal-input" style="letter-spacing:1px; font-size:14px; text-transform:none; -webkit-text-security:none;" placeholder="Mensaje o enlace...">
+        <div class="modal-actions">
+          <button class="modal-btn" id="caption-skip">OMITIR</button>
+          <button class="modal-btn modal-btn-ok" id="caption-send">ENVIAR</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ephemeral-photo-modal">
+      <div class="photo-destruct-header">
+        <span>AUTODESTRUCCIÓN EN:</span>
+        <span class="photo-destruct-timer" id="photo-countdown">5s</span>
+      </div>
+      <img id="ephemeral-display-img" class="ephemeral-img" src="" alt="Cifrado">
+    </div>
+
+    <div id="lightbox-modal">
+      <img id="lightbox-img" class="ephemeral-img" src="" alt="Foto">
+    </div>
+
+    <div id="chat-view">
+      <header class="chat-header">
+        <button class="back-btn" id="back-btn">◄</button>
+        <div class="contact-avatar" id="active-avatar">📰</div>
+        <div>
+          <h2 id="active-name" style="font-size:14px; color:#00e5ff;">NOTICIAS</h2>
+          <p id="active-status" style="font-size:9px; color:#00e5ff;">CANAL OFICIAL</p>
+        </div>
+      </header>
+      <div id="chat-box"></div>
+
+      <div id="input-area">
+        <input type="file" id="file-input" accept="image/*" style="display:none;">
+        <button class="tool-btn" id="attach-btn" title="Enviar Foto">📎</button>
+        <button class="tool-btn" id="mic-btn" title="Grabar Audio">🎤</button>
+        <input type="text" id="msg-text" placeholder="Mensaje cifrado..." autocomplete="off">
+        <button class="send-circle-btn" id="send-btn">▶</button>
+      </div>
+
+      <div id="readonly-area" style="display:none; padding: 12px; background: #08111e; border-top: 1px solid #00ff6633;">
+        <div class="readonly-banner">🔒 CANAL NOTICIAS (SOLO LECTURA Y REACCIONES)</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA819OZqUCIo9GYjBzuahmoAnBumiZW_p8",
+      authDomain: "secret-999ea.firebaseapp.com",
+      projectId: "secret-999ea",
+      storageBucket: "secret-999ea.firebasestorage.app",
+      messagingSenderId: "734843782501",
+      appId: "1:734843782501:web:f90f6bd27a1a06f8f98d8c"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const messagesRef = db.collection("mensajes");
+    const roomsRef = db.collection("salas_privadas");
+
+    const ADMIN_USER = "admin";
+
+    async function getCryptoKey(pin) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(pin || "SECRET_DEFAULT_KEY"),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: enc.encode("SECRET_ENCRYPTION_SALT"),
+          iterations: 100000,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptData(text, pin) {
+      try {
+        const key = await getCryptoKey(pin);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(text);
+        const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, encoded);
+        return JSON.stringify({
+          iv: Array.from(iv),
+          data: Array.from(new Uint8Array(cipher))
+        });
+      } catch (e) {
+        return text;
+      }
+    }
+
+    async function decryptData(cipherJson, pin) {
+      try {
+        const parsed = JSON.parse(cipherJson);
+        if (!parsed.iv || !parsed.data) return cipherJson;
+        const key = await getCryptoKey(pin);
+        const decrypted = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: new Uint8Array(parsed.iv) },
+          key,
+          new Uint8Array(parsed.data)
+        );
+        return new TextDecoder().decode(decrypted);
+      } catch (e) {
+        return cipherJson;
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.innerText = str;
+      return div.innerHTML;
+    }
+
+    function shortCode(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash).toString(16).toUpperCase().padStart(4, '0').slice(-4);
+    }
+
+    function linkify(text) {
+      const escaped = escapeHtml(text);
+      const urlRegex = /((https?:\/\/|www\.)[^\s]+)/g;
+      return escaped.replace(urlRegex, (url) => {
+        const href = url.startsWith("http") ? url : "https://" + url;
+        return `<a href="${href}" target="_blank" rel="noopener">${url}</a>`;
+      });
+    }
+
+    let isRegisterMode = false;
+    let myUser = "";
+    let activeChatId = null;
+    let activeRoomPin = "";
+    let selectedRoomForPin = null;
+    let roomToDelete = null;
+    let msgToDeleteId = null;
+    let unsubscribe = null;
+    let unsubscribeRooms = null;
+    let activeTimers = {};
+    let photoViewTimer = null;
+    let isUserAdmin = false;
+    let pendingImagePayload = null;
+    window.photoPayloadMap = new Map();
+    window.audioPayloadMap = new Map();
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    function runScrambleEffect(element, originalText) {
+      const chars = "!@#$%^&*()_+-=[]{}|;:,.<>?0123456789";
+      let iteration = 0;
+      const interval = setInterval(() => {
+        element.innerText = originalText
+          .split("")
+          .map((char, index) => {
+            if (index < iteration) return originalText[index];
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("");
+
+        if (iteration >= originalText.length) clearInterval(interval);
+        iteration += 1 / 3;
+      }, 30);
+    }
+
+    const authTitle = document.getElementById("auth-title");
+    const headerTitle = document.getElementById("header-title");
+
+    setInterval(() => {
+      if (authTitle) runScrambleEffect(authTitle, "[SECRET]");
+      if (headerTitle) runScrambleEffect(headerTitle, "[SECRET]");
+      document.querySelectorAll(".encriptado-glow").forEach((el) => {
+        const original = el.dataset.original || el.innerText;
+        runScrambleEffect(el, original);
+      });
+    }, 6000);
+
+    const authView = document.getElementById("auth-view");
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const authUser = document.getElementById("auth-user");
+    const authPass = document.getElementById("auth-pass");
+    const authActionBtn = document.getElementById("auth-action-btn");
+
+    const contactsView = document.getElementById("contacts-view");
+    const userDisplay = document.getElementById("user-display");
+    const logoutBtn = document.getElementById("logout-btn");
+    const inviteContactsBtn = document.getElementById("invite-contacts-btn");
+    const contactsContainer = document.getElementById("contacts-container");
+    const importedContactsContainer = document.getElementById("imported-contacts-container");
+    const customRoomPin = document.getElementById("custom-room-pin");
+    const createRoomBtn = document.getElementById("create-room-btn");
+
+    const pinModal = document.getElementById("pin-modal");
+    const modalRoomTitle = document.getElementById("modal-room-title");
+    const modalPinInput = document.getElementById("modal-pin-input");
+    const pinCancel = document.getElementById("pin-cancel");
+    const pinOk = document.getElementById("pin-ok");
+
+    const deleteModal = document.getElementById("delete-modal");
+    const delCancel = document.getElementById("del-cancel");
+    const delOk = document.getElementById("del-ok");
+
+    const deleteMsgModal = document.getElementById("delete-msg-modal");
+    const delMsgCancel = document.getElementById("del-msg-cancel");
+    const delMsgOk = document.getElementById("del-msg-ok");
+
+    const alertModal = document.getElementById("alert-modal");
+    const alertText = document.getElementById("alert-text");
+    const alertOk = document.getElementById("alert-ok");
+
+    const captionModal = document.getElementById("caption-modal");
+    const captionInput = document.getElementById("caption-input");
+    const captionSkip = document.getElementById("caption-skip");
+    const captionSend = document.getElementById("caption-send");
+
+    const ephemeralPhotoModal = document.getElementById("ephemeral-photo-modal");
+    const photoCountdown = document.getElementById("photo-countdown");
+    const ephemeralDisplayImg = document.getElementById("ephemeral-display-img");
+
+    const lightboxModal = document.getElementById("lightbox-modal");
+    const lightboxImg = document.getElementById("lightbox-img");
+
+    const chatView = document.getElementById("chat-view");
+    const backBtn = document.getElementById("back-btn");
+    const activeName = document.getElementById("active-name");
+    const activeStatus = document.getElementById("active-status");
+    const activeAvatar = document.getElementById("active-avatar");
+    const chatBox = document.getElementById("chat-box");
+    const inputArea = document.getElementById("input-area");
+    const readonlyArea = document.getElementById("readonly-area");
+    const msgInput = document.getElementById("msg-text");
+    const sendBtn = document.getElementById("send-btn");
+    const attachBtn = document.getElementById("attach-btn");
+    const micBtn = document.getElementById("mic-btn");
+    const fileInput = document.getElementById("file-input");
+
+    function showAlert(msg) {
+      alertText.innerText = msg;
+      alertModal.style.display = "flex";
+    }
+
+    alertOk.onclick = () => { alertModal.style.display = "none"; };
+
+    lightboxModal.onclick = () => { lightboxModal.style.display = "none"; lightboxImg.src = ""; };
+
+    tabLogin.onclick = () => {
+      isRegisterMode = false;
+      tabLogin.classList.add("active");
+      tabRegister.classList.remove("active");
+      authActionBtn.innerText = "ENTRAR";
+    };
+
+    tabRegister.onclick = () => {
+      isRegisterMode = true;
+      tabRegister.classList.add("active");
+      tabLogin.classList.remove("active");
+      authActionBtn.innerText = "REGISTRARSE";
+    };
+
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        myUser = user.email.replace("@secret.app", "");
+        isUserAdmin = (myUser === ADMIN_USER);
+        userDisplay.innerText = "Agente: @" + myUser;
+        authView.style.display = "none";
+        contactsView.style.display = "flex";
+        listenRooms();
+      } else {
+        myUser = "";
+        isUserAdmin = false;
+        authView.style.display = "flex";
+        contactsView.style.display = "none";
+        if (unsubscribeRooms) unsubscribeRooms();
+      }
+    });
+
+    authActionBtn.onclick = () => {
+      const u = authUser.value.trim().toLowerCase();
+      const p = authPass.value.trim();
+
+      if (!u || !p) { showAlert("Ingresa usuario y contraseña"); return; }
+      if (p.length < 6) { showAlert("La contraseña debe tener al menos 6 caracteres"); return; }
+
+      const email = `${u}@secret.app`;
+
+      if (isRegisterMode) {
+        auth.createUserWithEmailAndPassword(email, p)
+          .then(() => { authUser.value = ""; authPass.value = ""; })
+          .catch((err) => {
+            if (err.code === "auth/email-already-in-use") showAlert("Este alias ya existe.");
+            else showAlert("Error: " + err.message);
+          });
+      } else {
+        auth.signInWithEmailAndPassword(email, p)
+          .then(() => { authUser.value = ""; authPass.value = ""; })
+          .catch(() => { showAlert("Usuario o contraseña incorrectos"); });
+      }
+    };
+
+    logoutBtn.onclick = () => {
+      auth.signOut();
+      if (unsubscribe) unsubscribe();
+      if (unsubscribeRooms) unsubscribeRooms();
+    };
+
+    // ===================== INVITAR / CONTACTOS DEL TELÉFONO =====================
+
+    function getInviteMessage(name) {
+      const url = window.location.href;
+      const saludo = name ? `Hola ${name}! ` : "Hola! ";
+      return `${saludo}Te invito a unirte a SECRET, la app de mensajería cifrada: ${url}`;
+    }
+
+    async function shareInviteLink() {
+      const text = getInviteMessage("");
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "SECRET", text: text, url: window.location.href });
+          return;
+        } catch (e) {
+          // usuario canceló o falló, seguimos con el respaldo
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showAlert("Enlace de invitación copiado al portapapeles");
+          return;
+        } catch (e) {}
+      }
+      showAlert("Comparte este enlace: " + window.location.href);
+    }
+
+    async function importPhoneContacts() {
+      const supported = ("contacts" in navigator) && ("ContactsManager" in window);
+      if (!supported) {
+        // En iPhone, computadoras y navegadores no compatibles no hay acceso a la agenda:
+        // usamos compartir/copiar el link de invitación como alternativa.
+        shareInviteLink();
+        return;
+      }
+      try {
+        const props = ["name", "tel"];
+        const opts = { multiple: true };
+        const contacts = await navigator.contacts.select(props, opts);
+        if (!contacts || contacts.length === 0) {
+          shareInviteLink();
+          return;
+        }
+        renderImportedContacts(contacts);
+      } catch (err) {
+        // Permiso denegado, cancelado, o no disponible en este navegador:
+        // ofrecemos compartir el link en vez de dejar al usuario sin opción.
+        shareInviteLink();
+      }
+    }
+
+    function renderImportedContacts(contacts) {
+      importedContactsContainer.innerHTML = "";
+      if (!contacts || contacts.length === 0) {
+        importedContactsContainer.innerHTML = `<div class="empty-hint">No se seleccionó ningún contacto.</div>`;
+        return;
+      }
+      contacts.forEach((c) => {
+        const name = (c.name && c.name[0]) || "Contacto";
+        const tel = (c.tel && c.tel[0]) || "";
+        const card = document.createElement("div");
+        card.className = "contact-card";
+        card.innerHTML = `
+          <div class="contact-avatar">👤</div>
+          <div class="contact-info">
+            <div class="contact-name">${escapeHtml(name)}</div>
+            <div class="contact-subtext">${tel ? escapeHtml(tel) : "Sin número"}</div>
+          </div>
+          <button class="mini-btn" data-tel="${escapeHtml(tel)}" data-name="${escapeHtml(name)}">INVITAR</button>
+        `;
+        card.querySelector(".mini-btn").onclick = (e) => {
+          e.stopPropagation();
+          inviteContact(tel, name);
+        };
+        importedContactsContainer.appendChild(card);
+      });
+    }
+
+    function inviteContact(tel, name) {
+      const msg = encodeURIComponent(getInviteMessage(name));
+      if (tel) {
+        window.location.href = `sms:${tel}?&body=${msg}`;
+      } else {
+        shareInviteLink();
+      }
+    }
+
+    inviteContactsBtn.onclick = importPhoneContacts;
+
+    // ===================== SALAS / CANALES =====================
+
+    function listenRooms() {
+      if (unsubscribeRooms) unsubscribeRooms();
+      unsubscribeRooms = roomsRef.onSnapshot((snapshot) => {
+        let cloudRooms = [];
+        snapshot.forEach(doc => { cloudRooms.push({ firestoreId: doc.id, ...doc.data() }); });
+        cloudRooms.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        renderRooms(cloudRooms);
+      }, () => {});
+    }
+
+    function renderRooms(cloudRooms) {
+      contactsContainer.innerHTML = "";
+      const generalCard = document.createElement("div");
+      generalCard.className = "contact-card";
+      generalCard.onclick = () => openChat({ id: "general", name: "[NOTICIAS]", pin: "40104010" });
+      generalCard.innerHTML = `
+        <div class="contact-avatar">📰</div>
+        <div class="contact-info">
+          <div class="contact-name">[NOTICIAS]</div>
+          <div class="contact-subtext">Canal Informativo Oficial (Solo Admin)</div>
+        </div>
+      `;
+      contactsContainer.appendChild(generalCard);
+
+      cloudRooms.forEach((room) => {
+        const roomDisplayName = `ENCRIPTADO-${shortCode(room.id || room.firestoreId)}`;
+        const card = document.createElement("div");
+        card.className = "contact-card";
+        card.innerHTML = `
+          <div class="contact-avatar">🔒</div>
+          <div class="contact-info">
+            <div class="contact-name encriptado-glow" data-original="[ ${roomDisplayName} ]">[ ${roomDisplayName} ]</div>
+            <div class="contact-subtext">Canal cifrado activo</div>
+          </div>
+        `;
+
+        let pressTimer = null;
+        let isLongPress = false;
+        const startPress = () => {
+          isLongPress = false;
+          pressTimer = setTimeout(() => {
+            isLongPress = true;
+            if (room.creador === myUser || isUserAdmin) {
+              roomToDelete = room;
+              deleteModal.style.display = "flex";
+            } else {
+              showAlert("ACCESO DENEGADO: Solo el creador o admin puede borrarla.");
+            }
+          }, 800);
+        };
+        const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
+
+        card.addEventListener("touchstart", startPress, { passive: true });
+        card.addEventListener("touchend", cancelPress);
+        card.addEventListener("touchmove", cancelPress);
+        card.addEventListener("mousedown", startPress);
+        card.addEventListener("mouseup", cancelPress);
+        card.addEventListener("mouseleave", cancelPress);
+
+        card.addEventListener("click", () => {
+          if (!isLongPress) promptPin(room.id, room.pin, `[ ${roomDisplayName} ]`);
+        });
+
+        contactsContainer.appendChild(card);
+      });
+    }
+
+    delCancel.onclick = () => { deleteModal.style.display = "none"; roomToDelete = null; };
+    delOk.onclick = () => {
+      if (roomToDelete) roomsRef.doc(roomToDelete.firestoreId).delete().catch(() => {});
+      deleteModal.style.display = "none"; roomToDelete = null;
+    };
+
+    delMsgCancel.onclick = () => { deleteMsgModal.style.display = "none"; msgToDeleteId = null; };
+    delMsgOk.onclick = () => {
+      if (msgToDeleteId) messagesRef.doc(msgToDeleteId).delete().catch(() => {});
+      deleteMsgModal.style.display = "none"; msgToDeleteId = null;
+    };
+
+    createRoomBtn.onclick = () => {
+      const pin = customRoomPin.value.trim();
+      if (!/^\d{6}$/.test(pin)) { showAlert("EL PIN DEBE SER DE 6 DÍGITOS"); return; }
+      const roomId = "room_" + pin;
+      roomsRef.doc(roomId).get().then((doc) => {
+        if (!doc.exists) {
+          return roomsRef.doc(roomId).set({ id: roomId, pin: pin, creador: myUser, createdAt: Date.now() });
+        }
+      }).then(() => {
+        customRoomPin.value = "";
+        openChat({ id: roomId, name: "[ ENCRIPTADO-" + shortCode(roomId) + " ]", pin: pin });
+      }).catch(err => showAlert("Error: " + err.message));
+    };
+
+    function promptPin(roomId, pin, displayName) {
+      selectedRoomForPin = { id: roomId, pin: pin, displayName: displayName };
+      modalRoomTitle.innerText = `PIN PARA ${displayName}:`;
+      modalPinInput.value = "";
+      pinModal.style.display = "flex";
+      modalPinInput.focus();
+    }
+
+    pinCancel.onclick = () => { pinModal.style.display = "none"; selectedRoomForPin = null; };
+    pinOk.onclick = () => {
+      if (modalPinInput.value.trim() === selectedRoomForPin.pin) {
+        pinModal.style.display = "none";
+        openChat(selectedRoomForPin);
+      } else {
+        showAlert("ACCESO DENEGADO: PIN INCORRECTO");
+        modalPinInput.value = "";
+      }
+    };
+
+    function openChat(room) {
+      activeChatId = room.id;
+      activeRoomPin = room.pin || "40104010";
+      activeName.innerText = room.displayName || room.name;
+      const isGlobal = activeChatId === "general";
+
+      if (isGlobal) {
+        activeAvatar.innerText = "📰";
+        activeStatus.innerText = "CANAL OFICIAL · FOTOS PERMANENTES";
+        activeStatus.style.color = "#00e5ff";
+        activeName.classList.remove("encriptado-glow");
+        inputArea.style.display = isUserAdmin ? "flex" : "none";
+        readonlyArea.style.display = isUserAdmin ? "none" : "block";
+      } else {
+        activeAvatar.innerText = "🔒";
+        activeStatus.innerText = "AUTODESTRUCCIÓN ACTIVA";
+        activeStatus.style.color = "#ff3366";
+        activeName.classList.add("encriptado-glow");
+        activeName.dataset.original = room.displayName || room.name;
+        inputArea.style.display = "flex";
+        readonlyArea.style.display = "none";
+      }
+
+      contactsView.style.display = "none";
+      chatView.style.display = "flex";
+      listenMessages();
+    }
+
+    backBtn.onclick = () => {
+      if (unsubscribe) unsubscribe();
+      Object.values(activeTimers).forEach(t => clearInterval(t));
+      activeTimers = {};
+      chatView.style.display = "none";
+      contactsView.style.display = "flex";
+      activeChatId = null;
+      activeRoomPin = "";
+    };
+
+    function listenMessages() {
+      if (unsubscribe) unsubscribe();
+      unsubscribe = messagesRef.where("chatId", "==", activeChatId).onSnapshot(async (snapshot) => {
+        let docs = [];
+        snapshot.forEach(doc => { docs.push({ docId: doc.id, ...doc.data() }); });
+        docs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        chatBox.innerHTML = "";
+        window.photoPayloadMap.clear();
+        window.audioPayloadMap.clear();
+
+        for (const data of docs) {
+          const isMe = data.usuario === myUser;
+          const isGlobal = activeChatId === "general";
+          const el = document.createElement("div");
+          el.className = "msg " + (isMe ? "user" : "other");
+
+          let decryptedText = data.texto ? await decryptData(data.texto, activeRoomPin) : "";
+          let decryptedCaption = data.caption ? await decryptData(data.caption, activeRoomPin) : "";
+          let html = !isMe ? `<div class="msg-sender">${escapeHtml(data.usuario)}</div>` : "";
+
+          if (data.img) {
+            if (isGlobal) {
+              // Canal de noticias: la foto es permanente, se muestra directo, sin autodestrucción.
+              const decryptedImg = await decryptData(data.img, activeRoomPin);
+              window.photoPayloadMap.set(data.docId, decryptedImg);
+              html += `<img src="${decryptedImg}" class="news-photo" onclick="expandPhoto('${data.docId}')">`;
+            } else {
+              window.photoPayloadMap.set(data.docId, data.img);
+              html += `
+                <div class="photo-vault-btn" onclick="viewEphemeralPhoto('${data.docId}')">
+                  <span>🔒</span>
+                  <span>[ VER FOTO ENCRIPTADA (1 VEZ) ]</span>
+                </div>
+              `;
+            }
+            if (decryptedCaption) {
+              html += `<div class="photo-caption">${linkify(decryptedCaption)}</div>`;
+            }
+          } else if (data.audio) {
+            window.audioPayloadMap.set(data.docId, data.audio);
+            html += `
+              <div class="audio-vault-btn" id="audio_btn_${data.docId}" onclick="playEphemeralAudio('${data.docId}')">
+                <span>🎙️</span>
+                <span>[ REPRODUCIR VOZ CIFRADA (1 VEZ) ]</span>
+              </div>
+            `;
+          } else {
+            if (decryptedText) html += `<div>${linkify(decryptedText)}</div>`;
+          }
+
+          html += `
+            <div class="msg-footer">
+              <span class="msg-meta">${new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+              ${(!isGlobal && !(data.img && !isGlobal === false)) ? '' : ''}
+              ${(!isGlobal) ? `<span class="self-destruct" id="timer_${data.docId}">⚡ 10s</span>` : ''}
+            </div>
+          `;
+
+          const reactions = data.reactions || {};
+          const emojis = ["🔥", "👍", "❤️", "👀", "⚡"];
+          html += `<div class="reactions-bar">`;
+          emojis.forEach(emo => {
+            const count = reactions[emo] ? reactions[emo].length : 0;
+            html += `<span class="reaction-pill" onclick="reactToMessage('${data.docId}', '${emo}')">${emo} ${count > 0 ? count : ''}</span>`;
+          });
+          html += `</div>`;
+
+          el.innerHTML = html;
+
+          let pressTimer = null;
+          let isLongPress = false;
+          const startPress = () => {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+              isLongPress = true;
+              if ((isGlobal && isUserAdmin) || (!isGlobal && isMe)) {
+                msgToDeleteId = data.docId;
+                deleteMsgModal.style.display = "flex";
+              }
+            }, 800);
+          };
+          const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
+
+          el.addEventListener("touchstart", startPress, { passive: true });
+          el.addEventListener("touchend", cancelPress);
+          el.addEventListener("touchmove", cancelPress);
+          el.addEventListener("mousedown", startPress);
+          el.addEventListener("mouseup", cancelPress);
+          el.addEventListener("mouseleave", cancelPress);
+
+          chatBox.appendChild(el);
+
+          if (!data.img && !data.audio && !isGlobal) {
+            startDestructTimer(data.docId);
+          }
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, () => {});
+    }
+
+    window.reactToMessage = (docId, emoji) => {
+      const msgDocRef = messagesRef.doc(docId);
+      db.runTransaction((transaction) => {
+        return transaction.get(msgDocRef).then((doc) => {
+          if (!doc.exists) return;
+          const reactions = doc.data().reactions || {};
+          let userList = reactions[emoji] || [];
+          if (userList.includes(myUser)) userList = userList.filter(u => u !== myUser);
+          else userList.push(myUser);
+          reactions[emoji] = userList;
+          transaction.update(msgDocRef, { reactions: reactions });
+        });
+      }).catch(() => {});
+    };
+
+    // Foto persistente (canal de noticias): se amplía y NO se borra.
+    window.expandPhoto = (docId) => {
+      const img = window.photoPayloadMap.get(docId);
+      if (!img) return;
+      lightboxImg.src = img;
+      lightboxModal.style.display = "flex";
+    };
+
+    // Foto efímera (salas privadas): se ve una vez y se autodestruye.
+    window.viewEphemeralPhoto = async (docId) => {
+      const encryptedImg = window.photoPayloadMap.get(docId);
+      if (!encryptedImg) return;
+      const decryptedImg = await decryptData(encryptedImg, activeRoomPin);
+      ephemeralDisplayImg.src = decryptedImg;
+      ephemeralPhotoModal.style.display = "flex";
+
+      let timeLeft = 5;
+      photoCountdown.innerText = `${timeLeft}s`;
+      if (photoViewTimer) clearInterval(photoViewTimer);
+
+      photoViewTimer = setInterval(() => {
+        timeLeft--;
+        photoCountdown.innerText = `${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(photoViewTimer);
+          ephemeralPhotoModal.style.display = "none";
+          ephemeralDisplayImg.src = "";
+          messagesRef.doc(docId).delete().catch(() => {});
+        }
+      }, 1000);
+    };
+
+    window.playEphemeralAudio = async (docId) => {
+      const encryptedAudio = window.audioPayloadMap.get(docId);
+      if (!encryptedAudio) return;
+      const btn = document.getElementById(`audio_btn_${docId}`);
+      if (btn) {
+        btn.onclick = null;
+        btn.innerHTML = "<span>🔊</span><span>[ REPRODUCIENDO... ]</span>";
+      }
+
+      const decryptedAudio = await decryptData(encryptedAudio, activeRoomPin);
+      const audio = new Audio(decryptedAudio);
+
+      audio.onended = () => {
+        if (btn) btn.innerHTML = "<span>💥</span><span>[ AUDIO DESTRUIDO ]</span>";
+        messagesRef.doc(docId).delete().catch(() => {});
+      };
+
+      audio.onerror = () => {
+        messagesRef.doc(docId).delete().catch(() => {});
+      };
+
+      audio.play().catch(() => {
+        messagesRef.doc(docId).delete().catch(() => {});
+      });
+    };
+
+    function startDestructTimer(docId) {
+      if (activeTimers[docId]) return;
+      let timeLeft = 10;
+      const timerEl = document.getElementById(`timer_${docId}`);
+      activeTimers[docId] = setInterval(() => {
+        timeLeft--;
+        if (timerEl) timerEl.innerText = `⚡ ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(activeTimers[docId]);
+          delete activeTimers[docId];
+          messagesRef.doc(docId).delete().catch(() => {});
+        }
+      }, 1000);
+    }
+
+    async function sendMessage(payloadData = null, type = 'text', caption = '') {
+      let encryptedText = "";
+      let encryptedImg = null;
+      let encryptedAudio = null;
+      let encryptedCaption = "";
+
+      if (type === 'text') {
+        const txt = msgInput.value.trim();
+        if (!txt) return;
+        encryptedText = await encryptData(txt, activeRoomPin);
+        msgInput.value = "";
+      } else if (type === 'img') {
+        encryptedImg = await encryptData(payloadData, activeRoomPin);
+        if (caption && caption.trim()) {
+          encryptedCaption = await encryptData(caption.trim(), activeRoomPin);
+        }
+      } else if (type === 'audio') {
+        encryptedAudio = await encryptData(payloadData, activeRoomPin);
+      }
+
+      messagesRef.add({
+        chatId: activeChatId,
+        usuario: myUser,
+        texto: encryptedText,
+        img: encryptedImg,
+        audio: encryptedAudio,
+        caption: encryptedCaption,
+        timestamp: Date.now(),
+        reactions: {}
+      });
+    }
+
+    sendBtn.onclick = () => sendMessage(null, 'text');
+    msgInput.onkeypress = (e) => { if (e.key === "Enter") sendMessage(null, 'text'); };
+
+    attachBtn.onclick = () => fileInput.click();
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.65);
+          pendingImagePayload = compressedBase64;
+          captionInput.value = "";
+          captionModal.style.display = "flex";
+          captionInput.focus();
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = "";
+    };
+
+    captionSkip.onclick = () => {
+      captionModal.style.display = "none";
+      if (pendingImagePayload) sendMessage(pendingImagePayload, 'img', '');
+      pendingImagePayload = null;
+    };
+
+    captionSend.onclick = () => {
+      captionModal.style.display = "none";
+      if (pendingImagePayload) sendMessage(pendingImagePayload, 'img', captionInput.value);
+      pendingImagePayload = null;
+      captionInput.value = "";
+    };
+
+    micBtn.onclick = async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? { mimeType: 'audio/webm;codecs=opus' }
+            : (MediaRecorder.isTypeSupported('audio/mp4') ? { mimeType: 'audio/mp4' } : {});
+
+          mediaRecorder = new MediaRecorder(stream, options);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = () => {
+            const mimeType = mediaRecorder.mimeType || 'audio/webm';
+            const audioBlob = new Blob(audioChunks, { type: mimeType });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              sendMessage(reader.result, 'audio');
+            };
+            reader.readAsDataURL(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          micBtn.classList.add("recording");
+          micBtn.innerText = "⏹️";
+        } catch (err) {
+          showAlert("Permiso de micrófono denegado o no disponible");
+        }
+      } else {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          mediaRecorder.stop();
+        }
+        isRecording = false;
+        micBtn.classList.remove("recording");
+        micBtn.innerText = "🎤";
+      }
+    };
+  </script>
+</body>
+</html>
